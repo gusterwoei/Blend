@@ -5,6 +5,13 @@ package com.guster.android.blend;
  *
  */
 public class BlendHelper implements AnimationImpl {
+    private static BlendHelper blendHelper;
+
+    public static BlendHelper get() {
+        if(blendHelper == null)
+            blendHelper = new BlendHelper();
+        return blendHelper;
+    }
 
     /** TRANSLATION **/
     @Override

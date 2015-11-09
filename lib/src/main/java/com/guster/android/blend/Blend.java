@@ -9,19 +9,20 @@ import android.view.View;
 import android.view.ViewPropertyAnimator;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * Created by Gusterwoei on 11/8/15.
  *
  */
 public class Blend implements AnimationImpl {
-    private static int nextAnimateKey = 1;
+    private int nextAnimateKey = 1;
 
     private long globalDuration = -1;
     private int count = 0;
     private View targetView;
-    private HashMap<Integer, Animation> map = new HashMap<>();
+    private boolean isReverse;
+    private boolean isAnimating;
+    private HashMap<Integer, Animation[]> map = new HashMap<>();
 
     public static Blend prepareFor(View targetView) {
         return new Blend(targetView);
@@ -31,15 +32,15 @@ public class Blend implements AnimationImpl {
         this.targetView = targetView;
     }
 
-    protected void addToMap(Animation animation) {
-        map.put(++count, animation);
+    protected void addToMap(Animation[] animations) {
+        map.put(++count, animations);
     }
 
     protected long getDuration() {
         return this.globalDuration;
     }
 
-    protected HashMap<Integer, Animation> getStoreMap() {
+    protected HashMap<Integer, Animation[]> getStoreMap() {
         return map;
     }
 
@@ -47,27 +48,86 @@ public class Blend implements AnimationImpl {
         return this.targetView;
     }
 
+    protected int getNextAnimateKey() {
+        return nextAnimateKey;
+    }
+
+    protected void runNextAnimations(Animation[] animations) {
+        // first we determine which animation has the longest duration,
+        // then we set the callback for that one to ensure all group animations are completed
+        Animation longestAnim = animations[0];
+        for(Animation anim : animations) {
+            if(anim.duration > longestAnim.duration || (longestAnim.duration == -1 && anim.duration > globalDuration)) {
+                longestAnim = anim;
+            }
+        }
+
+        for(Animation anim : animations) {
+            anim.prepareAnimation(anim == longestAnim);
+            anim.run();
+        }
+
+        // increment the map key for next animation
+        if(isReverse)
+            nextAnimateKey--;
+        else
+            nextAnimateKey++;
+    }
+
     public Blend setDuration(long globalDuration) {
         this.globalDuration = globalDuration;
         return this;
     }
 
+    public boolean isAnimating() {
+        return isAnimating;
+    }
+
     public Blend together(@NonNull Animation ... animations) {
         for(Animation animation : animations) {
             animation.setBlend(this);
-            addToMap(animation);
         }
+
+        addToMap(animations);
 
         return this;
     }
 
     public void start() {
-        logd("START ANIMATION");
+        if(isAnimating) {
+            logd("Blend is currently running, please try later...");
+            return;
+        }
+
+        isAnimating = true;
 
         // run the first record
         if(map.size() > 0) {
-            map.get(nextAnimateKey).run();
+            Animation[] arr = map.get(nextAnimateKey);
+            runNextAnimations(arr);
         }
+    }
+
+    public void reverseStart() {
+        if(isAnimating) {
+            logd("Blend is currently running, please try later...");
+            return;
+        }
+
+        nextAnimateKey = map.size();
+        isReverse = true;
+        start();
+    }
+
+    public void stop() {
+        reset();
+        targetView.animate().cancel();
+    }
+
+    private void reset() {
+        nextAnimateKey = 1;
+        isReverse = false;
+        isAnimating = false;
     }
 
     /** TRANSLATION **/
@@ -176,6 +236,7 @@ public class Blend implements AnimationImpl {
 
         protected Animation setBlend(Blend blend) {
             this.blend = blend;
+            return this;
         }
 
         public Animation setId(String id) {
@@ -183,7 +244,7 @@ public class Blend implements AnimationImpl {
             return this;
         }
 
-        public Animation setType(AnimType type) {
+        protected Animation setType(AnimType type) {
             this.type = type;
             return this;
         }
@@ -198,7 +259,7 @@ public class Blend implements AnimationImpl {
             return this;
         }
 
-        public Animation setValue(float value) {
+        protected Animation setValue(float value) {
             this.value = value;
             return this;
         }
@@ -208,19 +269,23 @@ public class Blend implements AnimationImpl {
             return this;
         }
 
-        public void setCallback(WeakReference<Callback> callback) {
-            this.callback = callback;
+        public Animation setCallback(Callback callback) {
+            this.callback = new WeakReference<Callback>(callback);
+            return this;
         }
 
         public Blend add() {
-            blend.addToMap(this);
+            blend.addToMap(new Animation[]{this});
             return blend;
         }
 
         protected void run() {
-            ViewPropertyAnimator animator = prepareAnimation();
+            ViewPropertyAnimator animator = blend.getTargetView().animate();
 
-            logd("RUN ANIM - " + type);
+            logd("RUN ANIM - " + type + " " + value + " :: " + blend.getNextAnimateKey());
+
+            // for reverse mode, negate the animation vlaue
+            float value = blend.isReverse? -this.value : this.value;
             
             switch (type) {
                 case TRANSLATION_X:
@@ -285,12 +350,9 @@ public class Blend implements AnimationImpl {
                     animator.rotationYBy(value);
                     break;
             }
-
-            // increment the Animation object pointer
-            nextAnimateKey++;
         }
         
-        private ViewPropertyAnimator prepareAnimation() {
+        private ViewPropertyAnimator prepareAnimation(boolean setCallback) {
             ViewPropertyAnimator animator = blend.getTargetView().animate();
             if(blend.getDuration() >= 0)
                 animator.setDuration(blend.getDuration());
@@ -301,24 +363,37 @@ public class Blend implements AnimationImpl {
             if(interpolator != null)
                 animator.setInterpolator(interpolator);
 
-            animator.setListener(new Animator.AnimatorListener() {
-                @Override
-                public void onAnimationStart(Animator animator) {}
-                @Override
-                public void onAnimationEnd(Animator animator) {
-                    // run the next animation
-                    if(nextAnimateKey <= blend.getStoreMap().size())
-                        blend.getStoreMap().get(nextAnimateKey).run();
+            if(setCallback) {
+                animator.setListener(new Animator.AnimatorListener() {
+                    @Override
+                    public void onAnimationStart(Animator animator) {
+                    }
 
-                    // return to user callback
-                    if(callback != null)
-                        callback.get().onAnimationEnd();
-                }
-                @Override
-                public void onAnimationCancel(Animator animator) {}
-                @Override
-                public void onAnimationRepeat(Animator animator) {}
-            });
+                    @Override
+                    public void onAnimationEnd(Animator animator) {
+                        // run the next animation
+                        if (blend.getNextAnimateKey() <= blend.getStoreMap().size() && blend.getNextAnimateKey() > 0) {
+                            Animation[] arr = blend.getStoreMap().get(blend.getNextAnimateKey());
+                            blend.runNextAnimations(arr);
+                        } else {
+                            logd("ANIMATION COMPLETE!");
+                            blend.reset();
+                        }
+
+                        // return to user callback
+                        if (callback != null)
+                            callback.get().onAnimationEnd();
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Animator animator) {
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animator animator) {
+                    }
+                });
+            }
 
             return animator;
         }

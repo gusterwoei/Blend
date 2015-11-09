@@ -10,6 +10,7 @@ import android.view.ViewPropertyAnimator;
 import android.widget.Button;
 
 import com.guster.android.blend.Blend;
+import com.guster.android.blend.BlendHelper;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -27,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
 
     // properties
     private int animationMode = 0;
+    private Blend blend;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,16 +112,31 @@ public class MainActivity extends AppCompatActivity {
         final int CANVAS_WIDTH = lytCanvas.getWidth();
         final int CANVAS_HEIGHT = lytCanvas.getHeight();
 
-        Blend.prepareFor(movingButton).setDuration(1000)
+        if(blend != null) {
+            blend.reverseStart();
+            return;
+        }
+
+        blend = Blend.prepareFor(movingButton).setDuration(1000)
                 .translationYBy(CANVAS_HEIGHT - movingButton.getHeight()).add()
                 .translationXBy(CANVAS_WIDTH - movingButton.getWidth()).add()
                 .translationYBy(movingButton.getHeight() - CANVAS_HEIGHT).add()
-                .translationXBy(movingButton.getWidth() - CANVAS_WIDTH).add()
-                .translationXBy((CANVAS_WIDTH - movingButton.getWidth()) / 2).add()
-                .translationYBy((CANVAS_HEIGHT - movingButton.getHeight()) / 2).add()
-                .scaleXBy(-0.5f).add().scaleYBy(-0.5f).add()
-                .scaleXBy(0.5f).add().scaleYBy(0.5f).add();
-
+                .translationXBy(movingButton.getWidth() - CANVAS_WIDTH).setCallback(new Blend.Callback() {
+                    @Override
+                    public void onAnimationEnd() {
+                        logd("Callback Now");
+                    }
+                }).add()
+                .together(
+                        BlendHelper.get().translationXBy((CANVAS_WIDTH - movingButton.getWidth()) / 2),
+                        BlendHelper.get().translationYBy((CANVAS_HEIGHT - movingButton.getHeight()) / 2))
+                .together(
+                        BlendHelper.get().scaleXBy(-0.5f),
+                        BlendHelper.get().scaleYBy(-0.5f))
+                .together(
+                        BlendHelper.get().scaleXBy(0.5f),
+                        BlendHelper.get().scaleYBy(0.5f));
+        blend.start();
     }
 
     @OnClick(R.id.btn_reset)
@@ -129,6 +146,7 @@ public class MainActivity extends AppCompatActivity {
         movingButton.setTranslationY(0);
         movingButton.animate().setListener(null);
         animationMode = 0;
+        blend = null;
 
         /*movingButton.animate().translationX(0).translationY(0).setDuration(0)
         .withEndAction(new Runnable() {
