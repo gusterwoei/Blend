@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.guster.android.blend.Blend;
 import com.guster.android.blend.BlendHelper;
@@ -33,10 +34,12 @@ public class MainActivity extends AppCompatActivity {
     protected ImageView imgGirl2;
     @Bind(R.id.img_boy)
     protected ImageView imgBoy;
+    @Bind(R.id.txt_title)
+    protected TextView txtTitle;
 
     // properties
     private int animationMode = 0;
-    private Blend blendButton, blendGirl1, blendGirl2, blendBoy;
+    private Blend blendButton, blendGirl1, blendGirl2, blendBoy, blendTitle;
     private BlendGrouper blendGrouper;
 
     @Override
@@ -44,6 +47,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+
+        txtTitle.setAlpha(0f);
+        txtTitle.setScaleX(3f);
+        txtTitle.setScaleY(3f);
     }
 
     @OnClick(R.id.btn_start_animation)
@@ -58,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
         blendButton = Blend.animate(movingButton).duration(BUTTON_DURATION)
                 .translationYBy(100f).add()
                 .translationYBy(-100f).add();
+
         blendGirl1 = Blend.animate(imgGirl1).duration(IMG_DURATION)
                 .together(
                         BlendHelper.get().translationYBy(-IMG_VAL),
@@ -65,26 +73,35 @@ public class MainActivity extends AppCompatActivity {
                 .together(
                         BlendHelper.get().translationYBy(IMG_VAL),
                         BlendHelper.get().alpha(1f));
+
         blendGirl2 = Blend.animate(imgGirl2).duration(IMG_DURATION)
                 .together(
                         BlendHelper.get().alpha(0.5f),
                         BlendHelper.get().translationYBy(-IMG_VAL).delay(100))
                 .together(
-                        BlendHelper.get().translationYBy(IMG_VAL),
-                        BlendHelper.get().alpha(1f));
+                        BlendHelper.get().alpha(1f),
+                        BlendHelper.get().translationYBy(IMG_VAL));
+
         blendBoy = Blend.animate(imgBoy).duration(IMG_DURATION)
                 .together(
                         BlendHelper.get().alpha(0.5f),
                         BlendHelper.get().translationYBy(-IMG_VAL).delay(200))
                 .together(
-                        BlendHelper.get().translationYBy(IMG_VAL),
-                        BlendHelper.get().alpha(1f));
+                        BlendHelper.get().alpha(1f),
+                        BlendHelper.get().translationYBy(IMG_VAL));
 
         blendGrouper = BlendGrouper.get()
                 .animate(blendButton, blendGirl1, blendGirl2, blendBoy).callback(new BlendGrouper.Callback() {
                     @Override
                     public void onAnimationEnd() {
-                        logd("START AGAIN");
+                        // show the title
+                        blendTitle = Blend.animate(txtTitle).duration(250)
+                                .together(
+                                        BlendHelper.get().alpha(1),
+                                        BlendHelper.get().scaleX(1),
+                                        BlendHelper.get().scaleY(1)
+                                );
+                        blendTitle.start();
                     }
                 });
         blendGrouper.startTogether();
@@ -134,12 +151,18 @@ public class MainActivity extends AppCompatActivity {
 
     @OnClick(R.id.btn_reset)
     protected void resetAnimation() {
+        if(blendTitle == null) return;
+
         blendButton.clear();
         blendGirl1.clear();
         blendGirl2.clear();
         blendBoy.clear();
+        blendTitle.clear();
         animationMode = 0;
-        //blendButton = null;
+
+        txtTitle.setAlpha(0f);
+        txtTitle.setScaleX(3f);
+        txtTitle.setScaleY(3f);
     }
 
     private void logd(String s) {

@@ -16,6 +16,7 @@ import java.util.HashMap;
  */
 public class Blend implements AnimationImpl {
     private int nextAnimateKey = 1;
+    private float tvOriScaleX, tvOriScaleY, tvOriAlpha;
 
     private long globalDuration = -1;
     private int count = 0;
@@ -33,6 +34,11 @@ public class Blend implements AnimationImpl {
 
     private Blend(View targetView) {
         this.targetView = targetView;
+
+        // store the original scale x,y and alpha for reverse() use
+        tvOriScaleX = targetView.getScaleX();
+        tvOriScaleY = targetView.getScaleY();
+        tvOriAlpha = targetView.getAlpha();
     }
 
     private void reset() {
@@ -315,6 +321,14 @@ public class Blend implements AnimationImpl {
 
             // for reverse mode, negate the animation value
             float value = blend.isReverse? -this.value : this.value;
+            if(blend.isReverse) {
+                if(type == AnimType.SCALE_X)
+                    value = blend.tvOriScaleX;
+                else if(type == AnimType.SCALE_Y)
+                    value = blend.tvOriScaleY;
+                else if(type == AnimType.ALPHA)
+                    value = blend.tvOriAlpha;
+            }
             
             switch (type) {
                 case TRANSLATION_X:
