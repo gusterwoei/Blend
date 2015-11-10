@@ -22,14 +22,23 @@ public class Blend implements AnimationImpl {
     private View targetView;
     private boolean isReverse;
     private boolean isAnimating;
+    private boolean repeat;
     private HashMap<Integer, Animation[]> map = new HashMap<>();
+    private WeakReference<Callback> blendCallback;
+    private WeakReference<PrivateCallback> privateBlendCallback;
 
-    public static Blend prepareFor(View targetView) {
+    public static Blend animate(View targetView) {
         return new Blend(targetView);
     }
 
     private Blend(View targetView) {
         this.targetView = targetView;
+    }
+
+    private void reset() {
+        nextAnimateKey = 1;
+        isReverse = false;
+        isAnimating = false;
     }
 
     protected void addToMap(Animation[] animations) {
@@ -74,9 +83,22 @@ public class Blend implements AnimationImpl {
             nextAnimateKey++;
     }
 
-    public Blend setDuration(long globalDuration) {
+    protected void setPrivateCallback(PrivateCallback privateBlendCallback) {
+        this.privateBlendCallback = new WeakReference<PrivateCallback>(privateBlendCallback);
+    }
+
+    public Blend duration(long globalDuration) {
         this.globalDuration = globalDuration;
         return this;
+    }
+
+    public Blend repeat(boolean repeat) {
+        this.repeat = repeat;
+        return this;
+    }
+
+    public void callback(Callback callback) {
+        this.blendCallback = new WeakReference<Callback>(callback);
     }
 
     public boolean isAnimating() {
@@ -124,10 +146,17 @@ public class Blend implements AnimationImpl {
         targetView.animate().cancel();
     }
 
-    private void reset() {
-        nextAnimateKey = 1;
-        isReverse = false;
-        isAnimating = false;
+    public void clear() {
+        reset();
+        if(targetView != null) {
+            targetView.animate().cancel();
+            targetView.setTranslationX(0);
+            targetView.setTranslationY(0);
+            targetView.setAlpha(1);
+            targetView.setRotation(0);
+            targetView.setScaleX(1);
+            targetView.setScaleY(1);
+        }
     }
 
     /** TRANSLATION **/
@@ -249,18 +278,18 @@ public class Blend implements AnimationImpl {
             return this;
         }
 
-        public Animation setDuration(long duration) {
+        protected Animation setValue(float value) {
+            this.value = value;
+            return this;
+        }
+
+        public Animation duration(long duration) {
             this.duration = duration;
             return this;
         }
 
-        public Animation setStartDelay(long startDelay) {
+        public Animation delay(long startDelay) {
             this.startDelay = startDelay;
-            return this;
-        }
-
-        protected Animation setValue(float value) {
-            this.value = value;
             return this;
         }
 
@@ -282,9 +311,9 @@ public class Blend implements AnimationImpl {
         protected void run() {
             ViewPropertyAnimator animator = blend.getTargetView().animate();
 
-            logd("RUN ANIM - " + type + " " + value + " :: " + blend.getNextAnimateKey());
+            //logd("RUN ANIM - " + type + " " + value + " :: " + blend.getNextAnimateKey());
 
-            // for reverse mode, negate the animation vlaue
+            // for reverse mode, negate the animation value
             float value = blend.isReverse? -this.value : this.value;
             
             switch (type) {
@@ -358,8 +387,7 @@ public class Blend implements AnimationImpl {
                 animator.setDuration(blend.getDuration());
             if(duration >= 0)
                 animator.setDuration(duration);
-            if(startDelay >= 0)
-                animator.setStartDelay(startDelay);
+            animator.setStartDelay(startDelay >= 0? startDelay : 0);
             if(interpolator != null)
                 animator.setInterpolator(interpolator);
 
@@ -377,7 +405,26 @@ public class Blend implements AnimationImpl {
                             blend.runNextAnimations(arr);
                         } else {
                             logd("ANIMATION COMPLETE!");
+
+                            final boolean isReverse = blend.isReverse;
+
+                            // reset flags to initial state upon complete
                             blend.reset();
+
+                            // return to the blend-one callback
+                            if(blend.blendCallback != null)
+                                blend.blendCallback.get().onAnimationEnd();
+
+                            if(blend.privateBlendCallback != null)
+                                blend.privateBlendCallback.get().onAnimationEnd();
+
+                            if(blend.repeat) {
+                                // restart again
+                                if(isReverse)
+                                    blend.reverseStart();
+                                else
+                                    blend.start();
+                            }
                         }
 
                         // return to user callback
@@ -407,6 +454,11 @@ public class Blend implements AnimationImpl {
     /** Animation Callback function **/
 
     public interface Callback {
+        void onAnimationEnd();
+    }
+
+    /** Private Use Callback **/
+    protected interface PrivateCallback {
         void onAnimationEnd();
     }
 }

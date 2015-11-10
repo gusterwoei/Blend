@@ -1,16 +1,18 @@
 package com.guster.android.example;
 
-import android.animation.Animator;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewPropertyAnimator;
 import android.widget.Button;
+import android.widget.ImageView;
 
 import com.guster.android.blend.Blend;
 import com.guster.android.blend.BlendHelper;
+import com.guster.android.blend.BlendGrouper;
+
+import java.util.Random;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -25,10 +27,17 @@ public class MainActivity extends AppCompatActivity {
     protected FloatingActionButton btnStart;
     @Bind(R.id.lyt_canvas)
     protected View lytCanvas;
+    @Bind(R.id.img_girl1)
+    protected ImageView imgGirl1;
+    @Bind(R.id.img_girl2)
+    protected ImageView imgGirl2;
+    @Bind(R.id.img_boy)
+    protected ImageView imgBoy;
 
     // properties
     private int animationMode = 0;
-    private Blend blend;
+    private Blend blendButton, blendGirl1, blendGirl2, blendBoy;
+    private BlendGrouper blendGrouper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,87 +46,56 @@ public class MainActivity extends AppCompatActivity {
         ButterKnife.bind(this);
     }
 
+    @OnClick(R.id.btn_start_animation)
+    protected void startAnimation2() {
+        if(blendBoy != null && blendBoy.isAnimating()) return;
+
+        final int BUTTON_DURATION = 300;
+        final int IMG_DURATION = 300;
+        int IMG_VAL = new Random().nextInt(130);
+        IMG_VAL = IMG_VAL < 50? 50 : IMG_VAL;
+
+        blendButton = Blend.animate(movingButton).duration(BUTTON_DURATION)
+                .translationYBy(100f).add()
+                .translationYBy(-100f).add();
+        blendGirl1 = Blend.animate(imgGirl1).duration(IMG_DURATION)
+                .together(
+                        BlendHelper.get().translationYBy(-IMG_VAL),
+                        BlendHelper.get().alpha(0.5f))
+                .together(
+                        BlendHelper.get().translationYBy(IMG_VAL),
+                        BlendHelper.get().alpha(1f));
+        blendGirl2 = Blend.animate(imgGirl2).duration(IMG_DURATION)
+                .together(
+                        BlendHelper.get().alpha(0.5f),
+                        BlendHelper.get().translationYBy(-IMG_VAL).delay(100))
+                .together(
+                        BlendHelper.get().translationYBy(IMG_VAL),
+                        BlendHelper.get().alpha(1f));
+        blendBoy = Blend.animate(imgBoy).duration(IMG_DURATION)
+                .together(
+                        BlendHelper.get().alpha(0.5f),
+                        BlendHelper.get().translationYBy(-IMG_VAL).delay(200))
+                .together(
+                        BlendHelper.get().translationYBy(IMG_VAL),
+                        BlendHelper.get().alpha(1f));
+
+        blendGrouper = BlendGrouper.get()
+                .animate(blendButton, blendGirl1, blendGirl2, blendBoy).callback(new BlendGrouper.Callback() {
+                    @Override
+                    public void onAnimationEnd() {
+                        logd("START AGAIN");
+                    }
+                });
+        blendGrouper.startTogether();
+    }
+
     //@OnClick(R.id.btn_start_animation)
     protected void startAnimation() {
         final int CANVAS_WIDTH = lytCanvas.getWidth();
         final int CANVAS_HEIGHT = lytCanvas.getHeight();
 
-        logd("W,H: " + CANVAS_WIDTH + ", " + CANVAS_HEIGHT);
-
-        ViewPropertyAnimator animator = movingButton.animate()
-                .setDuration(1000)
-                .setListener(new Animator.AnimatorListener() {
-                    @Override
-                    public void onAnimationStart(Animator animator) {
-                        logd("Animation Start");
-                    }
-
-                    @Override
-                    public void onAnimationEnd(Animator animator) {
-                        logd("Animation End");
-
-                        switch (animationMode) {
-                            case 0:
-                                movingButton.animate().translationXBy(CANVAS_WIDTH - movingButton.getWidth());
-                                break;
-                            case 1:
-                                movingButton.animate().translationYBy(movingButton.getHeight() - CANVAS_HEIGHT);
-                                break;
-                            case 2:
-                                movingButton.animate().translationXBy(movingButton.getWidth() - CANVAS_WIDTH);
-                                break;
-                            case 3:
-                                movingButton.animate()
-                                        .translationXBy( (CANVAS_WIDTH - movingButton.getWidth())/2)
-                                        .translationYBy( (CANVAS_HEIGHT - movingButton.getHeight())/2);
-                                break;
-                            case 4:
-                                movingButton.animate()
-                                        .scaleXBy(-0.5f)
-                                        .scaleYBy(-0.5f)
-                                        .withEndAction(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                logd("Animation Action End");
-                                                movingButton.animate().scaleXBy(0.5f).scaleYBy(0.5f);
-                                            }
-                                        })
-                                        .start();
-                                break;
-                            case 5:
-                                movingButton.animate().cancel();
-                                break;
-                        }
-
-                        animationMode++;
-                    }
-
-                    @Override
-                    public void onAnimationCancel(Animator animator) {
-
-                    }
-
-                    @Override
-                    public void onAnimationRepeat(Animator animator) {
-
-                    }
-                });
-
-        animator.translationYBy(CANVAS_HEIGHT - movingButton.getHeight());
-        animator.start();
-    }
-
-    @OnClick(R.id.btn_start_animation)
-    protected void startAnimation2() {
-        final int CANVAS_WIDTH = lytCanvas.getWidth();
-        final int CANVAS_HEIGHT = lytCanvas.getHeight();
-
-        if(blend != null) {
-            blend.reverseStart();
-            return;
-        }
-
-        blend = Blend.prepareFor(movingButton).setDuration(1000)
+        blendButton = Blend.animate(movingButton).duration(500)
                 .translationYBy(CANVAS_HEIGHT - movingButton.getHeight()).add()
                 .translationXBy(CANVAS_WIDTH - movingButton.getWidth()).add()
                 .translationYBy(movingButton.getHeight() - CANVAS_HEIGHT).add()
@@ -136,25 +114,32 @@ public class MainActivity extends AppCompatActivity {
                 .together(
                         BlendHelper.get().scaleXBy(0.5f),
                         BlendHelper.get().scaleYBy(0.5f));
-        blend.start();
+
+        Blend blend2 = Blend.animate(movingButton)
+                .duration(500).repeat(true)
+                .rotationBy(360f).add()
+                .translationYBy(-50f).duration(300).add()
+                .translationYBy(50f).duration(300).add();
+
+        BlendGrouper.get()
+                .animate(blendButton, blend2)
+                .callback(new BlendGrouper.Callback() {
+                    @Override
+                    public void onAnimationEnd() {
+                        logd("Happy Birthday Friend");
+                    }
+                })
+                .start();
     }
 
     @OnClick(R.id.btn_reset)
     protected void resetAnimation() {
-        movingButton.animate().cancel();
-        movingButton.setTranslationX(0);
-        movingButton.setTranslationY(0);
-        movingButton.animate().setListener(null);
+        blendButton.clear();
+        blendGirl1.clear();
+        blendGirl2.clear();
+        blendBoy.clear();
         animationMode = 0;
-        blend = null;
-
-        /*movingButton.animate().translationX(0).translationY(0).setDuration(0)
-        .withEndAction(new Runnable() {
-            @Override
-            public void run() {
-                animationMode = 0;
-            }
-        });*/
+        //blendButton = null;
     }
 
     private void logd(String s) {
