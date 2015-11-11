@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.guster.android.blend.Blend;
 import com.guster.android.blend.BlendHelper;
@@ -21,11 +22,11 @@ import butterknife.OnClick;
 
 public class MainActivity extends AppCompatActivity {
     @Bind(R.id.btn_moving)
-    protected Button movingButton;
+    protected View movingButton;
     @Bind(R.id.btn_reset)
     protected Button btnReset;
     @Bind(R.id.btn_start_animation)
-    protected FloatingActionButton btnStart;
+    protected Button btnStart;
     @Bind(R.id.lyt_canvas)
     protected View lytCanvas;
     @Bind(R.id.img_girl1)
@@ -34,12 +35,14 @@ public class MainActivity extends AppCompatActivity {
     protected ImageView imgGirl2;
     @Bind(R.id.img_boy)
     protected ImageView imgBoy;
+    @Bind(R.id.img_rock)
+    protected ImageView imgRock;
     @Bind(R.id.txt_title)
     protected TextView txtTitle;
 
     // properties
     private int animationMode = 0;
-    private Blend blendButton, blendGirl1, blendGirl2, blendBoy, blendTitle;
+    private Blend blendButton, blendGirl1, blendGirl2, blendBoy, blendTitle, blendRock;
     private BlendGrouper blendGrouper;
 
     @Override
@@ -48,13 +51,36 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+        resetAnimation();
+    }
+
+    @OnClick(R.id.btn_reset)
+    protected void resetAnimation() {
+
+        if(blendButton != null)
+            blendButton.clear();
+        if(blendGirl1 != null)
+            blendGirl1.clear();
+        if(blendGirl2 != null)
+            blendGirl2.clear();
+        if(blendBoy != null)
+            blendBoy.clear();
+        if(blendTitle != null)
+            blendTitle.clear();
+        if(blendRock != null)
+            blendRock.clear();
+
         txtTitle.setAlpha(0f);
         txtTitle.setScaleX(3f);
         txtTitle.setScaleY(3f);
+        imgRock.setTranslationX(-300);
+        imgRock.setAlpha(1f);
+
+        Toast.makeText(this, "Animation Reset", Toast.LENGTH_SHORT).show();
     }
 
     @OnClick(R.id.btn_start_animation)
-    protected void startAnimation2() {
+    protected void startAnimation() {
         if(blendBoy != null && blendBoy.isAnimating()) return;
 
         final int BUTTON_DURATION = 300;
@@ -63,8 +89,8 @@ public class MainActivity extends AppCompatActivity {
         IMG_VAL = IMG_VAL < 50? 50 : IMG_VAL;
 
         blendButton = Blend.animate(movingButton).duration(BUTTON_DURATION)
-                .translationYBy(100f).add()
-                .translationYBy(-100f).add();
+                .translationXBy(100f).add()
+                .translationXBy(-100f).add();
 
         blendGirl1 = Blend.animate(imgGirl1).duration(IMG_DURATION)
                 .together(
@@ -104,11 +130,21 @@ public class MainActivity extends AppCompatActivity {
                         blendTitle.start();
                     }
                 });
-        blendGrouper.startTogether();
+
+        blendRock = Blend.animate(imgRock).duration(1000)
+                .together(
+                        BlendHelper.get().rotation(360),
+                        BlendHelper.get().translationX(0).setCallback(new Blend.Callback() {
+                            @Override
+                            public void onAnimationEnd() {
+                                blendGrouper.startTogether();
+                            }
+                        }))
+                .alpha(0).duration(500).add();
+        blendRock.start();
     }
 
-    //@OnClick(R.id.btn_start_animation)
-    protected void startAnimation() {
+    /*protected void startAnimationOld() {
         final int CANVAS_WIDTH = lytCanvas.getWidth();
         final int CANVAS_HEIGHT = lytCanvas.getHeight();
 
@@ -147,23 +183,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 })
                 .start();
-    }
-
-    @OnClick(R.id.btn_reset)
-    protected void resetAnimation() {
-        if(blendTitle == null) return;
-
-        blendButton.clear();
-        blendGirl1.clear();
-        blendGirl2.clear();
-        blendBoy.clear();
-        blendTitle.clear();
-        animationMode = 0;
-
-        txtTitle.setAlpha(0f);
-        txtTitle.setScaleX(3f);
-        txtTitle.setScaleY(3f);
-    }
+    }*/
 
     private void logd(String s) {
         Log.d("BLEND", s);

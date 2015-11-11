@@ -32,6 +32,11 @@
             android:layout_marginBottom="10dp"
             android:gravity="center_horizontal|bottom">
             <ImageView
+                android:id="@+id/img_rock"
+                android:layout_width="@dimen/img_size"
+                android:layout_height="@dimen/img_size"
+                android:src="@drawable/rock"/>
+            <ImageView
                 android:id="@+id/img_girl1"
                 android:layout_width="@dimen/img_size"
                 android:layout_height="@dimen/img_size"
@@ -49,11 +54,11 @@
                 android:layout_height="@dimen/img_size"
                 android:src="@drawable/boy1"/>
         </LinearLayout>
-        <Button
+        <View
             android:id="@+id/btn_moving"
-            android:layout_width="100dp"
-            android:layout_height="wrap_content"
-            android:text="Jump!"
+            android:layout_width="200dp"
+            android:layout_height="1dp"
+            android:layout_marginLeft="30dp"
             android:textColor="#cbffffff"
             android:background="#75c3e6"/>
     </LinearLayout>
@@ -67,13 +72,12 @@
             android:id="@+id/btn_reset"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginRight="10dp"
             android:text="RESET"/>
-        <android.support.design.widget.FloatingActionButton
+        <Button
             android:id="@+id/btn_start_animation"
             android:layout_width="wrap_content"
-            android:layout_height="100dp"
-            android:src="@android:drawable/ic_dialog_map"/>
+            android:layout_height="wrap_content"
+            android:text="Start"/>
     </LinearLayout>
 
 </LinearLayout>

@@ -70,15 +70,16 @@ public class Blend implements AnimationImpl {
     protected void runNextAnimations(Animation[] animations) {
         // first we determine which animation has the longest duration,
         // then we set the callback for that one to ensure all group animations are completed
-        Animation longestAnim = animations[0];
+        /*Animation longestAnim = animations[0];
         for(Animation anim : animations) {
             if(anim.duration > longestAnim.duration || (longestAnim.duration == -1 && anim.duration > globalDuration)) {
                 longestAnim = anim;
             }
-        }
+        }*/
 
         for(Animation anim : animations) {
-            anim.prepareAnimation(anim == longestAnim);
+            //anim.prepareAnimation(anim == longestAnim);
+            anim.prepareAnimation(true);
             anim.run();
         }
 
@@ -103,8 +104,9 @@ public class Blend implements AnimationImpl {
         return this;
     }
 
-    public void callback(Callback callback) {
+    public Blend callback(Callback callback) {
         this.blendCallback = new WeakReference<Callback>(callback);
+        return this;
     }
 
     public boolean isAnimating() {
@@ -158,10 +160,10 @@ public class Blend implements AnimationImpl {
             targetView.animate().cancel();
             targetView.setTranslationX(0);
             targetView.setTranslationY(0);
-            targetView.setAlpha(1);
+            targetView.setAlpha(tvOriAlpha);
             targetView.setRotation(0);
-            targetView.setScaleX(1);
-            targetView.setScaleY(1);
+            targetView.setScaleX(tvOriScaleX);
+            targetView.setScaleY(tvOriScaleY);
         }
     }
 
