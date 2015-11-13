@@ -3,7 +3,6 @@ package com.guster.android.blend;
 import android.animation.Animator;
 import android.animation.TimeInterpolator;
 import android.os.Build;
-import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewPropertyAnimator;
@@ -113,7 +112,7 @@ public class Blend implements AnimationImpl {
         return isAnimating;
     }
 
-    public Blend together(@NonNull Animation ... animations) {
+    public Blend together(Animation ... animations) {
         for(Animation animation : animations) {
             animation.setBlend(this);
         }
@@ -399,13 +398,15 @@ public class Blend implements AnimationImpl {
         
         private ViewPropertyAnimator prepareAnimation(boolean setCallback) {
             ViewPropertyAnimator animator = blend.getTargetView().animate();
+
+            // evenly distribute the global duration among animators
             if(blend.getDuration() >= 0)
-                animator.setDuration(blend.getDuration());
+                animator.setDuration(blend.getDuration() / blend.getStoreMap().size());
             if(duration >= 0)
                 animator.setDuration(duration);
-            animator.setStartDelay(startDelay >= 0? startDelay : 0);
             if(interpolator != null)
                 animator.setInterpolator(interpolator);
+            animator.setStartDelay(startDelay >= 0? startDelay : 0);
 
             if(setCallback) {
                 animator.setListener(new Animator.AnimatorListener() {

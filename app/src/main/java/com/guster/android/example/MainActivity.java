@@ -83,8 +83,8 @@ public class MainActivity extends AppCompatActivity {
     protected void startAnimation() {
         if(blendBoy != null && blendBoy.isAnimating()) return;
 
-        final int BUTTON_DURATION = 300;
-        final int IMG_DURATION = 300;
+        final int BUTTON_DURATION = 600;
+        final int IMG_DURATION = 600;
         int IMG_VAL = new Random().nextInt(130);
         IMG_VAL = IMG_VAL < 50? 50 : IMG_VAL;
 
@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onAnimationEnd() {
                         // show the title
-                        blendTitle = Blend.animate(txtTitle).duration(250)
+                        blendTitle = Blend.animate(txtTitle).duration(500)
                                 .together(
                                         BlendHelper.get().alpha(1),
                                         BlendHelper.get().scaleX(1),
