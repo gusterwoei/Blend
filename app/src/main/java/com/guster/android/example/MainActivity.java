@@ -10,6 +10,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.guster.android.blend.AnimType;
 import com.guster.android.blend.Blend;
 import com.guster.android.blend.BlendHelper;
 import com.guster.android.blend.BlendGrouper;
