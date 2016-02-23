@@ -445,10 +445,10 @@ public class Blend implements AnimationImpl {
                             blend.reset();
 
                             // return to the blend-one callback
-                            if(blend.blendCallback != null)
+                            if(blend.blendCallback != null && blend.blendCallback.get() != null)
                                 blend.blendCallback.get().onAnimationEnd();
 
-                            if(blend.privateBlendCallback != null)
+                            if(blend.privateBlendCallback != null && blend.privateBlendCallback.get() != null)
                                 blend.privateBlendCallback.get().onAnimationEnd();
 
                             if(blend.repeat) {
@@ -461,7 +461,7 @@ public class Blend implements AnimationImpl {
                         }
 
                         // return to user callback
-                        if (callback != null)
+                        if (callback != null && callback.get() != null)
                             callback.get().onAnimationEnd();
                     }
 
