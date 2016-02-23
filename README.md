@@ -6,7 +6,7 @@ Blend is implemented using Android's ```ViewPropertyAnimator```.
 Add the dependency in build.gradle
 ```xml
 dependencies {
-    compile 'com.guster.android:blend:1.0.1'
+    compile 'com.guster.android:blend:1.0.2'
 }
 ```
 
